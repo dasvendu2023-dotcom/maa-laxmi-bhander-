@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAA LAXMI BHANDER - All in One Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-amber-600 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide flex items-center gap-2">
+                <i class="fa-solid font-store text-yellow-300"></i> MAA LAXMI BHANDER
+            </h1>
+            <div class="flex items-center space-x-6">
+                <button onclick="toggleSection('products-section')" class="hover:text-yellow-200 font-medium">হোম / প্রোডাক্ট</button>
+                <button onclick="toggleSection('tracking-section')" class="hover:text-yellow-200 font-medium">অর্ডার ট্র্যাকিং</button>
+                <button onclick="toggleCartDrawer()" class="relative bg-amber-700 p-2 rounded-full hover:bg-amber-800 transition">
+                    <i class="fa-solid fa-cart-shopping text-xl px-1"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner -->
+    <section class="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-12 text-center shadow-inner">
+        <h2 class="text-3xl md:text-5xl font-extrabold mb-2">মা লক্ষ্মী ভাণ্ডারে আপনাকে স্বাগতম</h2>
+        <p class="text-lg opacity-90">আপনার নিত্যপ্রয়োজনীয় সকল সেরা মানের পন্য একসাথে এক ছাদের নিচে!</p>
+    </section>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-8">
+
+        <!-- Products Section -->
+        <section id="products-section">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 border-b-2 border-amber-500 pb-2 inline-block">আমাদের প্রোডাক্ট সমূহ</h3>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Products will be injected by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Order Tracking Section -->
+        <section id="tracking-section" class="hidden max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-2xl font-bold mb-4 text-center text-amber-600">অর্ডার ট্র্যাকিং সিস্টেম</h3>
+            <p class="text-sm text-gray-600 mb-6 text-center">আপনার অর্ডার আইডি দিয়ে বর্তমান স্ট্যাটাস চেক করুন</p>
+            
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="track-order-id" placeholder="অর্ডার আইডি লিখুন (যেমন: MLB-12345)" class="flex-grow p-3 border rounded-lg focus:outline-none focus:border-amber-500">
+                <button onclick="trackOrder()" class="bg-amber-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-amber-700 transition">খুঁজুন</button>
+            </div>
+
+            <!-- Tracking Result -->
+            <div id="tracking-result" class="hidden border-t pt-6">
+                <h4 class="font-semibold text-lg mb-2">অর্ডার স্ট্যাটাস: <span id="status-text" class="text-amber-600 font-bold"></span></h4>
+                <p id="tracking-customer-info" class="text-sm text-gray-600 mb-4"></p>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+                    <div id="progress-bar" class="bg-amber-500 h-4 rounded-full transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span>Order Placed</span>
+                    <span>Processing</span>
+                    <span>Shipped</span>
+                    <span>Delivered</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Checkout Section -->
+        <section id="checkout-section" class="hidden max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-2xl font-bold mb-6 text-center text-amber-600">শিপিং ও পেমেন্ট ডিটেইলস</h3>
+            <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">আপনার নাম</label>
+                    <input type="text" id="cust-name" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">মোবাইল নাম্বার</label>
+                    <input type="tel" id="cust-phone" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">সম্পূর্ণ ঠিকানা</label>
+                    <textarea id="cust-address" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">পেমেন্ট মেথড সিলেক্ট করুন</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer hover:bg-amber-50">
+                            <input type="radio" name="payment" value="bKash/Nagad" checked class="text-amber-600">
+                            <span>মোবাইল ব্যাংকিং (bKash / Nagad)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer hover:bg-amber-50">
+                            <input type="radio" name="payment" value="Cash on Delivery" class="text-amber-600">
+                            <span>ক্যাশ অন ডেলিভারি (Cash on Delivery)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t pt-4 text-right">
+                    <p class="text-lg font-bold mb-4">মোট দেয় টাকা: <span id="checkout-total" class="text-amber-600">৳0</span></p>
+                    <button type="submit" class="w-full bg-amber-600 text-white py-3 rounded-lg font-bold hover:bg-amber-700 transition">অর্ডার কনফার্ম করুন</button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- Cart Drawer (Modal) -->
+    <div id="cart-drawer" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-end">
+        <div class="bg-white w-full max-w-md h-full p-6 flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                    <h3 class="text-xl font-bold">আপনার শপিং কার্ট</h3>
+                    <button onclick="toggleCartDrawer()" class="text-gray-500 text-2xl">&times;</button>
+                </div>
+                <div id="cart-items" class="space-y-4 max-h-96 overflow-y-auto">
+                    <!-- Cart items injected here -->
+                </div>
+            </div>
+            <div class="border-t pt-4">
+                <div class="flex justify-between text-lg font-bold mb-4">
+                    <span>মোট হিসাব:</span>
+                    <span id="cart-total" class="text-amber-600">৳0</span>
+                </div>
+                <button onclick="goToCheckout()" class="w-full bg-amber-600 text-white py-3 rounded-lg font-bold hover:bg-amber-700 transition">চেকআউট এ যান</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // Sample Products (MAA LAXMI BHANDER)
+        const products = [
+            { id: 1, name: "প্রিমিয়াম মিনিকেট চাল (৫ কেজি)", price: 380, image: "https://via.placeholder.com/200?text=Miniket+Rice" },
+            { id: 2, name: "বিশুদ্ধ খাঁটি সরিষার তেল (১ লিটার)", price: 220, image: "https://via.placeholder.com/200?text=Mustard+Oil" },
+            { id: 3, name: "অর্গানিক গাওয়া ঘি (২৫০ গ্রাম)", price: 450, image: "https://via.placeholder.com/200?text=Ghee" },
+            { id: 4, name: "সুরমা প্রিমিয়াম চা পাতা ( ৫০০ গ্রাম )", price: 180, image: "https://via.placeholder.com/200?text=Tea+Leaf" }
+        ];
+
+        let cart = [];
+
+        // Render Products
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border hover:shadow-lg transition">
+                    <img src="${p.image}" alt="${p.name}" class="w-full h-40 object-cover">
+                    <div class="p-4">
+                        <h4 class="font-bold text-md mb-2 text-gray-800">${p.name}</h4>
+                        <p class="text-amber-600 font-bold text-lg mb-4">৳${p.price}</p>
+                        <button onclick="addToCart(${p.id})" class="w-full bg-amber-600 text-white py-2 rounded font-semibold hover:bg-amber-700 transition">কার্টে যোগ করুন</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cart Actions
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const exist = cart.find(item => item.id === productId);
+            if(exist) {
+                exist.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.qty, 0);
+            const cartItems = document.getElementById('cart-items');
+            cartItems.innerHTML = cart.map(i => `
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <h5 class="font-semibold text-sm">${i.name}</h5>
+                        <p class="text-xs text-gray-500">৳${i.price} x ${i.qty}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-amber-600">৳${i.price * i.qty}</span>
+                        <button onclick="removeFromCart(${i.id})" class="text-red-500 text-xs hover:underline">রিমুভ</button>
+                    </div>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            document.getElementById('cart-total').innerText = '৳' + total;
+            document.getElementById('checkout-total').innerText = '৳' + total;
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateCart();
+        }
+
+        function toggleCartDrawer() {
+            document.getElementById('cart-drawer').classList.toggle('hidden');
+        }
+
+        function toggleSection(sectionId) {
+            ['products-section', 'tracking-section', 'checkout-section'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        function goToCheckout() {
+            if(cart.length === 0) {
+                alert("আপনার কার্ট খালি!");
+                return;
+            }
+            toggleCartDrawer();
+            toggleSection('checkout-section');
+        }
+
+        // Firebase Checkout & Order Logic
+        function handleCheckout(e) {
+            e.preventDefault();
+            const orderId = 'MLB-' + Math.floor(10000 + Math.random() * 90000);
+            const orderData = {
+                orderId: orderId,
+                name: document.getElementById('cust-name').value,
+                phone: document.getElementById('cust-phone').value,
+                address: document.getElementById('cust-address').value,
+                payment: document.querySelector('input[name="payment"]:checked').value,
+                items: cart,
+                totalAmount: cart.reduce((sum, i) => sum + (i.price * i.qty), 0),
+                status: 'Order Placed',
+                createdAt: new Date().toISOString()
+            };
+
+            // Save to Firebase Database
+            if(db) {
+                db.collection('orders').doc(orderId).set(orderData)
+                .then(() => {
+                    alert(`ধন্যবাদ! আপনার অর্ডার সফল হয়েছে।\nঅর্ডার আইডি: ${orderId}`);
+                    cart = [];
+                    updateCart();
+                    toggleSection('tracking-section');
+                    document.getElementById('track-order-id').value = orderId;
+                    trackOrder();
+                })
+                .catch(err => {
+                    console.error("Error saving order: ", err);
+                    alert("অর্ডার সংরক্ষণ করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।");
+                });
+            } else {
+                alert(`অর্ডার জমা হয়েছে (ডেমো মোড)।\nঅর্ডার আইডি: ${orderId}`);
+            }
+        }
+
+        // Track Order Logic
+        function trackOrder() {
+            const orderId = document.getElementById('track-order-id').value.trim();
+            if(!orderId) return alert("অনুগ্রহ করে একটি অর্ডার আইডি প্রদান করুন।");
+
+            if(db) {
+                db.collection('orders').doc(orderId).get().then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        showTrackingData(data);
+                    } else {
+                        alert("এই আইডি দিয়ে কোনো অর্ডার পাওয়া যায়নি!");
+                    }
+                });
+            } else {
+                // Demo fallback
+                showTrackingData({
+                    orderId: orderId,
+                    name: "Demo Customer",
+                    status: "Processing"
+                });
+            }
+        }
+
+        function showTrackingData(data) {
+            const res = document.getElementById('tracking-result');
+            const statusText = document.getElementById('status-text');
+            const progressBar = document.getElementById('progress-bar');
+            const info = document.getElementById('tracking-customer-info');
+
+            res.classList.remove('hidden');
+            statusText.innerText = data.status;
+            info.innerText = `গ্রাহক: ${data.name} | আইডি: ${data.orderId}`;
+
+            const statusWidths = {
+                'Order Placed': '25%',
+                'Processing': '50%',
+                'Shipped': '75%',
+                'Delivered': '100%'
+            };
+
+            progressBar.style.width = statusWidths[data.status] || '25%';
+        }
+
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch(e) {
+            console.log("Firebase default setup demo mode running.");
+        }
+
+        // Init
+        renderProducts();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAA LAXMI BHANDER - All in One Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-amber-600 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide flex items-center gap-2">
+                <i class="fa-solid font-store text-yellow-300"></i> MAA LAXMI BHANDER
+            </h1>
+            <div class="flex items-center space-x-6">
+                <button onclick="toggleSection('products-section')" class="hover:text-yellow-200 font-medium">হোম / প্রোডাক্ট</button>
+                <button onclick="toggleSection('tracking-section')" class="hover:text-yellow-200 font-medium">অর্ডার ট্র্যাকিং</button>
+                <button onclick="toggleCartDrawer()" class="relative bg-amber-700 p-2 rounded-full hover:bg-amber-800 transition">
+                    <i class="fa-solid fa-cart-shopping text-xl px-1"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner -->
+    <section class="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-12 text-center shadow-inner">
+        <h2 class="text-3xl md:text-5xl font-extrabold mb-2">মা লক্ষ্মী ভাণ্ডারে আপনাকে স্বাগতম</h2>
+        <p class="text-lg opacity-90">আপনার নিত্যপ্রয়োজনীয় সকল সেরা মানের পন্য একসাথে এক ছাদের নিচে!</p>
+    </section>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-8">
+
+        <!-- Products Section -->
+        <section id="products-section">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 border-b-2 border-amber-500 pb-2 inline-block">আমাদের প্রোডাক্ট সমূহ</h3>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Products will be injected by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Order Tracking Section -->
+        <section id="tracking-section" class="hidden max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-2xl font-bold mb-4 text-center text-amber-600">অর্ডার ট্র্যাকিং সিস্টেম</h3>
+            <p class="text-sm text-gray-600 mb-6 text-center">আপনার অর্ডার আইডি দিয়ে বর্তমান স্ট্যাটাস চেক করুন</p>
+            
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="track-order-id" placeholder="অর্ডার আইডি লিখুন (যেমন: MLB-12345)" class="flex-grow p-3 border rounded-lg focus:outline-none focus:border-amber-500">
+                <button onclick="trackOrder()" class="bg-amber-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-amber-700 transition">খুঁজুন</button>
+            </div>
+
+            <!-- Tracking Result -->
+            <div id="tracking-result" class="hidden border-t pt-6">
+                <h4 class="font-semibold text-lg mb-2">অর্ডার স্ট্যাটাস: <span id="status-text" class="text-amber-600 font-bold"></span></h4>
+                <p id="tracking-customer-info" class="text-sm text-gray-600 mb-4"></p>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+                    <div id="progress-bar" class="bg-amber-500 h-4 rounded-full transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span>Order Placed</span>
+                    <span>Processing</span>
+                    <span>Shipped</span>
+                    <span>Delivered</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Checkout Section -->
+        <section id="checkout-section" class="hidden max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-2xl font-bold mb-6 text-center text-amber-600">শিপিং ও পেমেন্ট ডিটেইলস</h3>
+            <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">আপনার নাম</label>
+                    <input type="text" id="cust-name" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">মোবাইল নাম্বার</label>
+                    <input type="tel" id="cust-phone" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">সম্পূর্ণ ঠিকানা</label>
+                    <textarea id="cust-address" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">পেমেন্ট মেথড সিলেক্ট করুন</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer hover:bg-amber-50">
+                            <input type="radio" name="payment" value="bKash/Nagad" checked class="text-amber-600">
+                            <span>মোবাইল ব্যাংকিং (bKash / Nagad)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer hover:bg-amber-50">
+                            <input type="radio" name="payment" value="Cash on Delivery" class="text-amber-600">
+                            <span>ক্যাশ অন ডেলিভারি (Cash on Delivery)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t pt-4 text-right">
+                    <p class="text-lg font-bold mb-4">মোট দেয় টাকা: <span id="checkout-total" class="text-amber-600">৳0</span></p>
+                    <button type="submit" class="w-full bg-amber-600 text-white py-3 rounded-lg font-bold hover:bg-amber-700 transition">অর্ডার কনফার্ম করুন</button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- Cart Drawer (Modal) -->
+    <div id="cart-drawer" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-end">
+        <div class="bg-white w-full max-w-md h-full p-6 flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                    <h3 class="text-xl font-bold">আপনার শপিং কার্ট</h3>
+                    <button onclick="toggleCartDrawer()" class="text-gray-500 text-2xl">&times;</button>
+                </div>
+                <div id="cart-items" class="space-y-4 max-h-96 overflow-y-auto">
+                    <!-- Cart items injected here -->
+                </div>
+            </div>
+            <div class="border-t pt-4">
+                <div class="flex justify-between text-lg font-bold mb-4">
+                    <span>মোট হিসাব:</span>
+                    <span id="cart-total" class="text-amber-600">৳0</span>
+                </div>
+                <button onclick="goToCheckout()" class="w-full bg-amber-600 text-white py-3 rounded-lg font-bold hover:bg-amber-700 transition">চেকআউট এ যান</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // Sample Products (MAA LAXMI BHANDER)
+        const products = [
+            { id: 1, name: "প্রিমিয়াম মিনিকেট চাল (৫ কেজি)", price: 380, image: "https://via.placeholder.com/200?text=Miniket+Rice" },
+            { id: 2, name: "বিশুদ্ধ খাঁটি সরিষার তেল (১ লিটার)", price: 220, image: "https://via.placeholder.com/200?text=Mustard+Oil" },
+            { id: 3, name: "অর্গানিক গাওয়া ঘি (২৫০ গ্রাম)", price: 450, image: "https://via.placeholder.com/200?text=Ghee" },
+            { id: 4, name: "সুরমা প্রিমিয়াম চা পাতা ( ৫০০ গ্রাম )", price: 180, image: "https://via.placeholder.com/200?text=Tea+Leaf" }
+        ];
+
+        let cart = [];
+
+        // Render Products
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border hover:shadow-lg transition">
+                    <img src="${p.image}" alt="${p.name}" class="w-full h-40 object-cover">
+                    <div class="p-4">
+                        <h4 class="font-bold text-md mb-2 text-gray-800">${p.name}</h4>
+                        <p class="text-amber-600 font-bold text-lg mb-4">৳${p.price}</p>
+                        <button onclick="addToCart(${p.id})" class="w-full bg-amber-600 text-white py-2 rounded font-semibold hover:bg-amber-700 transition">কার্টে যোগ করুন</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cart Actions
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const exist = cart.find(item => item.id === productId);
+            if(exist) {
+                exist.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.qty, 0);
+            const cartItems = document.getElementById('cart-items');
+            cartItems.innerHTML = cart.map(i => `
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <h5 class="font-semibold text-sm">${i.name}</h5>
+                        <p class="text-xs text-gray-500">৳${i.price} x ${i.qty}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-amber-600">৳${i.price * i.qty}</span>
+                        <button onclick="removeFromCart(${i.id})" class="text-red-500 text-xs hover:underline">রিমুভ</button>
+                    </div>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            document.getElementById('cart-total').innerText = '৳' + total;
+            document.getElementById('checkout-total').innerText = '৳' + total;
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateCart();
+        }
+
+        function toggleCartDrawer() {
+            document.getElementById('cart-drawer').classList.toggle('hidden');
+        }
+
+        function toggleSection(sectionId) {
+            ['products-section', 'tracking-section', 'checkout-section'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        function goToCheckout() {
+            if(cart.length === 0) {
+                alert("আপনার কার্ট খালি!");
+                return;
+            }
+            toggleCartDrawer();
+            toggleSection('checkout-section');
+        }
+
+        // Firebase Checkout & Order Logic
+        function handleCheckout(e) {
+            e.preventDefault();
+            const orderId = 'MLB-' + Math.floor(10000 + Math.random() * 90000);
+            const orderData = {
+                orderId: orderId,
+                name: document.getElementById('cust-name').value,
+                phone: document.getElementById('cust-phone').value,
+                address: document.getElementById('cust-address').value,
+                payment: document.querySelector('input[name="payment"]:checked').value,
+                items: cart,
+                totalAmount: cart.reduce((sum, i) => sum + (i.price * i.qty), 0),
+                status: 'Order Placed',
+                createdAt: new Date().toISOString()
+            };
+
+            // Save to Firebase Database
+            if(db) {
+                db.collection('orders').doc(orderId).set(orderData)
+                .then(() => {
+                    alert(`ধন্যবাদ! আপনার অর্ডার সফল হয়েছে।\nঅর্ডার আইডি: ${orderId}`);
+                    cart = [];
+                    updateCart();
+                    toggleSection('tracking-section');
+                    document.getElementById('track-order-id').value = orderId;
+                    trackOrder();
+                })
+                .catch(err => {
+                    console.error("Error saving order: ", err);
+                    alert("অর্ডার সংরক্ষণ করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।");
+                });
+            } else {
+                alert(`অর্ডার জমা হয়েছে (ডেমো মোড)।\nঅর্ডার আইডি: ${orderId}`);
+            }
+        }
+
+        // Track Order Logic
+        function trackOrder() {
+            const orderId = document.getElementById('track-order-id').value.trim();
+            if(!orderId) return alert("অনুগ্রহ করে একটি অর্ডার আইডি প্রদান করুন।");
+
+            if(db) {
+                db.collection('orders').doc(orderId).get().then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        showTrackingData(data);
+                    } else {
+                        alert("এই আইডি দিয়ে কোনো অর্ডার পাওয়া যায়নি!");
+                    }
+                });
+            } else {
+                // Demo fallback
+                showTrackingData({
+                    orderId: orderId,
+                    name: "Demo Customer",
+                    status: "Processing"
+                });
+            }
+        }
+
+        function showTrackingData(data) {
+            const res = document.getElementById('tracking-result');
+            const statusText = document.getElementById('status-text');
+            const progressBar = document.getElementById('progress-bar');
+            const info = document.getElementById('tracking-customer-info');
+
+            res.classList.remove('hidden');
+            statusText.innerText = data.status;
+            info.innerText = `গ্রাহক: ${data.name} | আইডি: ${data.orderId}`;
+
+            const statusWidths = {
+                'Order Placed': '25%',
+                'Processing': '50%',
+                'Shipped': '75%',
+                'Delivered': '100%'
+            };
+
+            progressBar.style.width = statusWidths[data.status] || '25%';
+        }
+
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch(e) {
+            console.log("Firebase default setup demo mode running.");
+        }
+
+        // Init
+        renderProducts();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAA LAXMI BHANDER - All in One Shop</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-amber-600 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-2xl font-bold tracking-wide flex items-center gap-2">
+                <i class="fa-solid font-store text-yellow-300"></i> MAA LAXMI BHANDER
+            </h1>
+            <div class="flex items-center space-x-6">
+                <button onclick="toggleSection('products-section')" class="hover:text-yellow-200 font-medium">হোম / প্রোডাক্ট</button>
+                <button onclick="toggleSection('tracking-section')" class="hover:text-yellow-200 font-medium">অর্ডার ট্র্যাকিং</button>
+                <button onclick="toggleCartDrawer()" class="relative bg-amber-700 p-2 rounded-full hover:bg-amber-800 transition">
+                    <i class="fa-solid fa-cart-shopping text-xl px-1"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Banner -->
+    <section class="bg-gradient-to-r from-amber-500 to-orange-600 text-white py-12 text-center shadow-inner">
+        <h2 class="text-3xl md:text-5xl font-extrabold mb-2">মা লক্ষ্মী ভাণ্ডারে আপনাকে স্বাগতম</h2>
+        <p class="text-lg opacity-90">আপনার নিত্যপ্রয়োজনীয় সকল সেরা মানের পন্য একসাথে এক ছাদের নিচে!</p>
+    </section>
+
+    <!-- Main Container -->
+    <main class="container mx-auto px-4 py-8">
+
+        <!-- Products Section -->
+        <section id="products-section">
+            <h3 class="text-2xl font-bold mb-6 text-gray-800 border-b-2 border-amber-500 pb-2 inline-block">আমাদের প্রোডাক্ট সমূহ</h3>
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- Products will be injected by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Order Tracking Section -->
+        <section id="tracking-section" class="hidden max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-2xl font-bold mb-4 text-center text-amber-600">অর্ডার ট্র্যাকিং সিস্টেম</h3>
+            <p class="text-sm text-gray-600 mb-6 text-center">আপনার অর্ডার আইডি দিয়ে বর্তমান স্ট্যাটাস চেক করুন</p>
+            
+            <div class="flex gap-2 mb-6">
+                <input type="text" id="track-order-id" placeholder="অর্ডার আইডি লিখুন (যেমন: MLB-12345)" class="flex-grow p-3 border rounded-lg focus:outline-none focus:border-amber-500">
+                <button onclick="trackOrder()" class="bg-amber-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-amber-700 transition">খুঁজুন</button>
+            </div>
+
+            <!-- Tracking Result -->
+            <div id="tracking-result" class="hidden border-t pt-6">
+                <h4 class="font-semibold text-lg mb-2">অর্ডার স্ট্যাটাস: <span id="status-text" class="text-amber-600 font-bold"></span></h4>
+                <p id="tracking-customer-info" class="text-sm text-gray-600 mb-4"></p>
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-4 mb-4 overflow-hidden">
+                    <div id="progress-bar" class="bg-amber-500 h-4 rounded-full transition-all duration-500" style="width: 25%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span>Order Placed</span>
+                    <span>Processing</span>
+                    <span>Shipped</span>
+                    <span>Delivered</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Checkout Section -->
+        <section id="checkout-section" class="hidden max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h3 class="text-2xl font-bold mb-6 text-center text-amber-600">শিপিং ও পেমেন্ট ডিটেইলস</h3>
+            <form id="checkout-form" onsubmit="handleCheckout(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">আপনার নাম</label>
+                    <input type="text" id="cust-name" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">মোবাইল নাম্বার</label>
+                    <input type="tel" id="cust-phone" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">সম্পূর্ণ ঠিকানা</label>
+                    <textarea id="cust-address" required class="w-full p-2 border rounded-lg focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">পেমেন্ট মেথড সিলেক্ট করুন</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer hover:bg-amber-50">
+                            <input type="radio" name="payment" value="bKash/Nagad" checked class="text-amber-600">
+                            <span>মোবাইল ব্যাংকিং (bKash / Nagad)</span>
+                        </label>
+                        <label class="flex items-center space-x-2 border p-3 rounded-lg cursor-pointer hover:bg-amber-50">
+                            <input type="radio" name="payment" value="Cash on Delivery" class="text-amber-600">
+                            <span>ক্যাশ অন ডেলিভারি (Cash on Delivery)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="border-t pt-4 text-right">
+                    <p class="text-lg font-bold mb-4">মোট দেয় টাকা: <span id="checkout-total" class="text-amber-600">৳0</span></p>
+                    <button type="submit" class="w-full bg-amber-600 text-white py-3 rounded-lg font-bold hover:bg-amber-700 transition">অর্ডার কনফার্ম করুন</button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- Cart Drawer (Modal) -->
+    <div id="cart-drawer" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex justify-end">
+        <div class="bg-white w-full max-w-md h-full p-6 flex flex-col justify-between shadow-xl">
+            <div>
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                    <h3 class="text-xl font-bold">আপনার শপিং কার্ট</h3>
+                    <button onclick="toggleCartDrawer()" class="text-gray-500 text-2xl">&times;</button>
+                </div>
+                <div id="cart-items" class="space-y-4 max-h-96 overflow-y-auto">
+                    <!-- Cart items injected here -->
+                </div>
+            </div>
+            <div class="border-t pt-4">
+                <div class="flex justify-between text-lg font-bold mb-4">
+                    <span>মোট হিসাব:</span>
+                    <span id="cart-total" class="text-amber-600">৳0</span>
+                </div>
+                <button onclick="goToCheckout()" class="w-full bg-amber-600 text-white py-3 rounded-lg font-bold hover:bg-amber-700 transition">চেকআউট এ যান</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // Sample Products (MAA LAXMI BHANDER)
+        const products = [
+            { id: 1, name: "প্রিমিয়াম মিনিকেট চাল (৫ কেজি)", price: 380, image: "https://via.placeholder.com/200?text=Miniket+Rice" },
+            { id: 2, name: "বিশুদ্ধ খাঁটি সরিষার তেল (১ লিটার)", price: 220, image: "https://via.placeholder.com/200?text=Mustard+Oil" },
+            { id: 3, name: "অর্গানিক গাওয়া ঘি (২৫০ গ্রাম)", price: 450, image: "https://via.placeholder.com/200?text=Ghee" },
+            { id: 4, name: "সুরমা প্রিমিয়াম চা পাতা ( ৫০০ গ্রাম )", price: 180, image: "https://via.placeholder.com/200?text=Tea+Leaf" }
+        ];
+
+        let cart = [];
+
+        // Render Products
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border hover:shadow-lg transition">
+                    <img src="${p.image}" alt="${p.name}" class="w-full h-40 object-cover">
+                    <div class="p-4">
+                        <h4 class="font-bold text-md mb-2 text-gray-800">${p.name}</h4>
+                        <p class="text-amber-600 font-bold text-lg mb-4">৳${p.price}</p>
+                        <button onclick="addToCart(${p.id})" class="w-full bg-amber-600 text-white py-2 rounded font-semibold hover:bg-amber-700 transition">কার্টে যোগ করুন</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Cart Actions
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const exist = cart.find(item => item.id === productId);
+            if(exist) {
+                exist.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.reduce((sum, i) => sum + i.qty, 0);
+            const cartItems = document.getElementById('cart-items');
+            cartItems.innerHTML = cart.map(i => `
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <h5 class="font-semibold text-sm">${i.name}</h5>
+                        <p class="text-xs text-gray-500">৳${i.price} x ${i.qty}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-amber-600">৳${i.price * i.qty}</span>
+                        <button onclick="removeFromCart(${i.id})" class="text-red-500 text-xs hover:underline">রিমুভ</button>
+                    </div>
+                </div>
+            `).join('');
+
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            document.getElementById('cart-total').innerText = '৳' + total;
+            document.getElementById('checkout-total').innerText = '৳' + total;
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateCart();
+        }
+
+        function toggleCartDrawer() {
+            document.getElementById('cart-drawer').classList.toggle('hidden');
+        }
+
+        function toggleSection(sectionId) {
+            ['products-section', 'tracking-section', 'checkout-section'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        function goToCheckout() {
+            if(cart.length === 0) {
+                alert("আপনার কার্ট খালি!");
+                return;
+            }
+            toggleCartDrawer();
+            toggleSection('checkout-section');
+        }
+
+        // Firebase Checkout & Order Logic
+        function handleCheckout(e) {
+            e.preventDefault();
+            const orderId = 'MLB-' + Math.floor(10000 + Math.random() * 90000);
+            const orderData = {
+                orderId: orderId,
+                name: document.getElementById('cust-name').value,
+                phone: document.getElementById('cust-phone').value,
+                address: document.getElementById('cust-address').value,
+                payment: document.querySelector('input[name="payment"]:checked').value,
+                items: cart,
+                totalAmount: cart.reduce((sum, i) => sum + (i.price * i.qty), 0),
+                status: 'Order Placed',
+                createdAt: new Date().toISOString()
+            };
+
+            // Save to Firebase Database
+            if(db) {
+                db.collection('orders').doc(orderId).set(orderData)
+                .then(() => {
+                    alert(`ধন্যবাদ! আপনার অর্ডার সফল হয়েছে।\nঅর্ডার আইডি: ${orderId}`);
+                    cart = [];
+                    updateCart();
+                    toggleSection('tracking-section');
+                    document.getElementById('track-order-id').value = orderId;
+                    trackOrder();
+                })
+                .catch(err => {
+                    console.error("Error saving order: ", err);
+                    alert("অর্ডার সংরক্ষণ করতে ব্যর্থ হয়েছে। পুনরায় চেষ্টা করুন।");
+                });
+            } else {
+                alert(`অর্ডার জমা হয়েছে (ডেমো মোড)।\nঅর্ডার আইডি: ${orderId}`);
+            }
+        }
+
+        // Track Order Logic
+        function trackOrder() {
+            const orderId = document.getElementById('track-order-id').value.trim();
+            if(!orderId) return alert("অনুগ্রহ করে একটি অর্ডার আইডি প্রদান করুন।");
+
+            if(db) {
+                db.collection('orders').doc(orderId).get().then((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        showTrackingData(data);
+                    } else {
+                        alert("এই আইডি দিয়ে কোনো অর্ডার পাওয়া যায়নি!");
+                    }
+                });
+            } else {
+                // Demo fallback
+                showTrackingData({
+                    orderId: orderId,
+                    name: "Demo Customer",
+                    status: "Processing"
+                });
+            }
+        }
+
+        function showTrackingData(data) {
+            const res = document.getElementById('tracking-result');
+            const statusText = document.getElementById('status-text');
+            const progressBar = document.getElementById('progress-bar');
+            const info = document.getElementById('tracking-customer-info');
+
+            res.classList.remove('hidden');
+            statusText.innerText = data.status;
+            info.innerText = `গ্রাহক: ${data.name} | আইডি: ${data.orderId}`;
+
+            const statusWidths = {
+                'Order Placed': '25%',
+                'Processing': '50%',
+                'Shipped': '75%',
+                'Delivered': '100%'
+            };
+
+            progressBar.style.width = statusWidths[data.status] || '25%';
+        }
+
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+        } catch(e) {
+            console.log("Firebase default setup demo mode running.");
+        }
+
+        // Init
+        renderProducts();
+    </script>
+</body>
+</html>
